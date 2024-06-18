@@ -1,4 +1,8 @@
-# Thesisdraft
+# Code for Thesis 
+
+# This code is divided into 3 sections, the first is the one where a combination of zonal ocr and regular expressions are used. In section 2 the method of template based zonal ocr is used. The third section details the "drag and drop" zonal ocr method. 
+
+
 !pip install pymupdf
 !pip install PyMuPDF
 !pip install PyMuPDF googletrans==4.0.0-rc1
