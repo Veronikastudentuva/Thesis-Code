@@ -89,75 +89,78 @@ def extract_key_value_name(text, key):
 
 # The CAS Number always follows the same pattern 
 # It can be made up from up to 10 numbers. They are separated into 3 different groups with "-". The first part has 2-7 digits, second has 2 digits and thirs has 1.
-def extract_cas_number(text):
-    cas_pattern = r'\b\d{2,7}-\d{2}-\d\b'
-    match = re.search(cas_pattern, text)
-    if match:
-        return match.group(0)
-    return None
-
-def extract_ec_no(text):
-    ec_no_pattern = r'\b(2|4|5)\d{2}-\d{3}-\d\b'
-    match = re.search(ec_no_pattern, text)
-    if match:
-        return match.group(0)
-    return None
-
-def extract_key_value2(text, keys):
-    lines = text.split('\n')
-    value = None
-    for key in keys:
-        for i, line in enumerate(lines):
-            if key in line:
-                match = re.search(rf'{key}\s*:\s*(.*)', line)
-                if match and match.group(1).strip():
-                    value = match.group(1).strip()
-                else:
-                    if i + 1 < len(lines) and lines[i + 1].strip() == '':
-                        if i + 2 < len(lines) and lines[i + 2].strip() == ':':
-                            if i + 3 < len(lines):
-                                value = lines[i + 3].strip()
-                    elif i + 1 < len(lines) and lines[i + 1].strip() == ':':
-                        if i + 2 < len(lines):
-                            value = lines[i + 2].strip()
-                    elif i + 1 < len(lines):
-                        value = lines[i + 1].strip()
-                if value:
-                    break
-        if value:
-            break
-    return value
-
-def uses(text):
-    # Remove the first instance of "Recommended use"
-    text = re.sub(r'Recommended use', '', text, count=1, flags=re.IGNORECASE)
-
-    if "Identified uses:" in text:
-        return extract_key_value2(text, ["Identified uses"])
-    elif "Substance/Mixture" in text:
-        return extract_key_value2(text, ["Substance/Mixture"])
-    elif "Recommended use" in text:
-        return extract_key_value2(text, ["Recommended use"])
-    else:
+    def extract_cas_number(text):
+        cas_pattern = r'\b\d{2,7}-\d{2}-\d\b'
+        match = re.search(cas_pattern, text)
+        if match:
+            return match.group(0)
         return None
 
+    def extract_ec_no(text):
+        ec_no_pattern = r'\b(2|4|5)\d{2}-\d{3}-\d\b'
+        match = re.search(ec_no_pattern, text)
+        if match:
+            return match.group(0)
+        return None
+
+    def extract_key_value2(text, keys):
+        lines = text.split('\n')
+        value = None
+        for key in keys:
+            for i, line in enumerate(lines):
+                if key in line:
+                    match = re.search(rf'{key}\s*:\s*(.*)', line)
+                    if match and match.group(1).strip():
+                        value = match.group(1).strip()
+                    else:
+                        if i + 1 < len(lines) and lines[i + 1].strip() == '':
+                            if i + 2 < len(lines) and lines[i + 2].strip() == ':':
+                                if i + 3 < len(lines):
+                                    value = lines[i + 3].strip()
+                        elif i + 1 < len(lines) and lines[i + 1].strip() == ':':
+                            if i + 2 < len(lines):
+                                value = lines[i + 2].strip()
+                        elif i + 1 < len(lines):
+                            value = lines[i + 1].strip()
+                    if value:
+                        break
+            if value:
+                break
+        return value
+
+
+
+    def uses(text):
+        text = re.sub(r'Recommended use', '', text, count=1, flags=re.IGNORECASE)
+        if "Identified uses:" in text:
+            return extract_key_value2(text, ["Identified uses"])
+        elif "Substance/Mixture" in text:
+            return extract_key_value2(text, ["Substance/Mixture"])
+        elif "Recommended use" in text:
+            return extract_key_value2(text, ["Recommended use"])
+        else:
+            return None
+
+
 # We check if its hazardous by looking for specific phrases which say that it is not hazardous, so if such a phrase is not found, we assume it is hazardous 
-def check_hazard(text):
-    lower_text = text.lower()
-    if "has not been classified as dangerous" in lower_text or "not a hazardous" in lower_text or "not classified as dangerous" in lower_text:
-        return "No"
-    return "Yes"
+
+    def check_hazard(text):
+        lower_text = text.lower()
+        if "has not been classified as dangerous" in lower_text or "not a hazardous" in lower_text or "not classified as dangerous" in lower_text:
+            return "No"
+        return "Yes"
 
 #ADR is labelled internally within the client company
-def check_adr(text):
-    return "None"
 
-def UN(text):
-    pattern = r'\bUN\s\d{4}\b'
-    match = re.search(pattern, text)
-    if match:
-        return match.group(0)
-    return None
+    def check_adr(text):
+        return "None"
+
+    def UN(text):
+        pattern = r'\bUN\s\d{4}\b'
+        match = re.search(pattern, text)
+        if match:
+            return match.group(0)
+        return None
 
 def extract_supplier(text):
     lines = text.split('\n')
