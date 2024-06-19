@@ -255,7 +255,36 @@
     
 # Section 2
 
+#2.1 First we intall the additional package of pytesseract and if have not yet intstall the packages from Section 1 
 
+!pip install pytesseract
+
+from PIL import Image
+import matplotlib.pyplot as plt
+
+#2.2 Set up the template 
+
+    template = [{"key": "Product Name", "coordinates": (65, 100, 120, 110)},
+    {"key": "CAS-No.", "coordinates": (70, 130, 200, 136)},
+    {"key": "EC No.", "coordinates": (70, 137, 200, 147)},
+    {"key": "Identified Uses", "coordinates": (20, 161, 100, 169)},
+    {"key": "Supplier", "coordinates": (20, 187, 100, 195)},
+    {"key": "Chemical Name", "coordinates": (10, 346, 90, 358)}]
+
+#2.3 Upload PDF and then the template is applied and results are displayed
+
+    for zone in template:
+        key = zone['key']
+        coordinates = zone['coordinates']
+        extracted_img, extracted_width, extracted_height = extract_region_from_pdf(pdf_path, coordinates)
+        print(f"{key}: 'Zone' size: {extracted_width} x {extracted_height} pixels")
+        plt.figure(figsize=(8, 8))
+        plt.imshow(extracted_img)
+        plt.axis('off')
+        plt.title(f'{key} Image: {extracted_width} x {extracted_height} pixels')
+        plt.show()
+
+    
 # Section 3
 
 
