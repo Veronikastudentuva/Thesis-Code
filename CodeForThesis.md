@@ -153,7 +153,7 @@
                 break
         return supplier
         
-    def second_extract_chemical_name_method(text):
+    def secondmethod_chemicalname(text):
         lines = [line.strip() for line in text.split('\n') if line.strip()]
         chemical_names = []
         keywords = ["CAS-No.", "EC-No.", "Index-No.", "Registration number", "Classification", "Concentration"]
