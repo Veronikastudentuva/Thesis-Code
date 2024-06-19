@@ -257,10 +257,10 @@
 
 #2.1 First we intall the additional package of pytesseract and if have not yet intstall the packages from Section 1 
 
-!pip install pytesseract
+    !pip install pytesseract
 
-from PIL import Image
-import matplotlib.pyplot as plt
+    from PIL import Image
+    import matplotlib.pyplot as plt
 
 #2.2 Set up the template 
 
@@ -271,8 +271,40 @@ import matplotlib.pyplot as plt
     {"key": "Supplier", "coordinates": (20, 187, 100, 195)},
     {"key": "Chemical Name", "coordinates": (10, 346, 90, 358)}]
 
+#2.3 Make the first page an image 
+
+    def render_pdf_page_as_image(pdf_path, page_number=0, zoom=1):
+        doc = fitz.open(pdf_path)
+        page = doc.load_page(page_number)
+        mat = fitz.Matrix(zoom, zoom)
+        pix = page.get_pixmap(matrix=mat)
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+        return img, page, pix.width, pix.height, mat
+
 #2.3 Upload PDF and then the template is applied and results are displayed
 
+    def extract_region_from_pdf(pdf_path, coordinates, zoom=2, page_number=0):
+        doc = fitz.open(pdf_path)
+        page = doc.load_page(page_number)
+        mat = fitz.Matrix(zoom, zoom)
+        page_width, page_height = page.rect.width, page.rect.height
+        x0, y0, x1, y1 = coordinates
+        rect = fitz.Rect(x0, y0, x1, y1)
+        rect = rect * mat 
+        x0, y0, x1, y1 = rect.tl.x, rect.tl.y, rect.br.x, rect.br.y
+        x0 = max(0, min(x0, page_width * mat.a))
+        y0 = max(0, min(y0, page_height * mat.d))
+        x1 = max(0, min(x1, page_width * mat.a))
+        y1 = max(0, min(y1, page_height * mat.d))
+
+    rect = fitz.Rect(x0, y0, x1, y1)
+    pix = page.get_pixmap(clip=rect)
+    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    return img, pix.width, pix.height
+
+    uploaded = files.upload()
+    pdf_path = list(uploaded.keys())[0]
+        
     for zone in template:
         key = zone['key']
         coordinates = zone['coordinates']
@@ -284,6 +316,9 @@ import matplotlib.pyplot as plt
         plt.title(f'{key} Image: {extracted_width} x {extracted_height} pixels')
         plt.show()
 
+#2.4 The information is extracted from the image into a dataframe 
+
+#2.5 Dataframe can be converted into an SQL compatible format
     
 # Section 3
 
