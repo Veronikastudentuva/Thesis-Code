@@ -5,6 +5,7 @@
 # Section 1: Combination of OCR and Regular Expressions
 
 #1.1 Install and setup the required packages
+
 #We will use the python library PyMuPDF 
 
     !pip install pymupdf
@@ -42,8 +43,11 @@
 
 
 #This function finds the key value pairs and is meant to work with different spacing, whether the value is on the same line or on a different line than the key
+
 #As in the documents we see ":" before any attribute we use that to guide whether the value is 
+
 #It assumes that the key is followed by ":" then the value. We account for possible differences in spacing, such as some values being within the same line as the key, while others are a line or two below the key 
+
 #This occurs as in the pdfs the data is othen in tables on in different lines, which is then reflected as we extract the text 
 
     # sometimes there is only 1 key and other times there are multiple so we want to iterate through the list of kwys 
