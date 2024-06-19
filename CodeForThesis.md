@@ -41,16 +41,16 @@
 
 #1.3 The code below is functions which use regular expressions to match patterns to look for the desired attributes:
 
+    #This function finds the key value pairs and is meant to work with different spacing, whether the value is on the same line or on a different line than the key
 
-#This function finds the key value pairs and is meant to work with different spacing, whether the value is on the same line or on a different line than the key
+    #As in the documents we see ":" before any attribute we use that to guide whether the value is 
 
-#As in the documents we see ":" before any attribute we use that to guide whether the value is 
+    #It assumes that the key is followed by ":" then the value. We account for possible differences in spacing, such as some values being within the same line as the key, while others are a line or two below the key 
 
-#It assumes that the key is followed by ":" then the value. We account for possible differences in spacing, such as some values being within the same line as the key, while others are a line or two below the key 
+    #This occurs as in the pdfs the data is othen in tables on in different lines, which is then reflected as we extract the text 
 
-#This occurs as in the pdfs the data is othen in tables on in different lines, which is then reflected as we extract the text 
-
-    # sometimes there is only 1 key and other times there are multiple so we want to iterate through the list of kwys 
+    # sometimes there is only 1 key and other times there are multiple so we want to iterate through the list of keys
+    
     def keyvaluepair(text, keys):
         if isinstance(keys, str):
             keys = [keys]
@@ -78,8 +78,9 @@
                 break
         return value
     
-#The CAS Number always follows the same pattern 
-#It can be made up from up to 10 numbers. They are separated into 3 different groups with "-". The first part has 2-7 digits, second has 2 digits and third has 1.
+    #The CAS Number always follows the same pattern 
+    
+    #It can be made up from up to 10 numbers. They are separated into 3 different groups with "-". The first part has 2-7 digits, second has 2 digits and third has 1.
 
     def casnumber(text):
         cas_pattern = r'\b\d{2,7}-\d{2}-\d\b'
@@ -95,8 +96,9 @@
             return match.group(0)
         return None
         
-#This function relies on the previously defined function to match key value pairs
-#In this case the keys are 'Identified uses', 'Substance/Mixture' and 'Recommended use' as we are assuming all those have the same meaning for our purpose
+    #This function relies on the previously defined function to match key value pairs
+    
+    #In this case the keys are 'Identified uses', 'Substance/Mixture' and 'Recommended use' as we are assuming all those have the same meaning for our purpose
 
     def uses(text):
         #We want to be able to seach for these patterns both if they are in capital and lower cases so use the package "IGNORECASE" from regular expressions for a case-insesitive search
@@ -110,7 +112,7 @@
         else:
             return None
 
-#We check if its hazardous by looking for specific phrases which say that it is not hazardous, so if such a phrase is not found, we assume it is hazardous 
+    #We check if its hazardous by looking for specific phrases which say that it is not hazardous, so if such a phrase is not found, we assume it is hazardous 
 
     def isitahazard(text):
         lower_text = text.lower()
@@ -118,7 +120,7 @@
             return "No"
         return "Yes"
 
-#ADR is labelled internally within the client company
+    #ADR is labelled internally within the client company
 
     def adr_(text):
         return "None"
@@ -150,11 +152,28 @@
                         supplier = lines[i + 1].strip()
                 break
         return supplier
-
-    def extract_chemical_name(text):
-        chemical_name = extract_key_value(text, "Chemical name")
+        
+    def second_extract_chemical_name_method(text):
+        lines = [line.strip() for line in text.split('\n') if line.strip()]
+        chemical_names = []
+        keywords = ["CAS-No.", "EC-No.", "Index-No.", "Registration number", "Classification", "Concentration"]
+        exclusion_patterns = [r'\d', r'%', r'Not Assigned', r'(\s*:\s*)', r'^\s*$', r'XXXX']
+        exclude_lines = keywords + exclusion_patterns
+        for i, line in enumerate(lines):
+            if "Chemical name" in line:
+                for j in range(i + 1, len(lines)):
+                    if re.search(r'section', lines[j], re.IGNORECASE):
+                        break  
+                    if any(re.search(pattern, lines[j]) for pattern in exclude_lines):
+                        continue
+                    chemical_names.append(lines[j])
+                break
+        return ', '.join(chemical_names)
+        
+    def chemicalname(text):
+        chemical_name = keyvaluepair(text, "Chemical name")
         if chemical_name == "CAS-No." or not chemical_name:
-            chemical_name = second_extract_chemical_name_method(text)
+            chemical_name = secondmethod_chemicalname(text)
         return chemical_name
 
 
@@ -172,7 +191,7 @@
         adr = adr_(text)
         un_number = UN(text)
         supplier = supplier(text)
-        chemical_names = extract_chemical_name(text)
+        chemical_names = chemicalname(text)
 
         results.append({
             'Product Name': product_name,
