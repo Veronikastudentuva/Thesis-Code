@@ -5,6 +5,7 @@
 # Section 1: Combination of OCR and Regular Expressions
 
 #1.1 Install and setup the required packages
+#We will use the python library PyMuPDF 
 
     !pip install pymupdf
     !pip install PyMuPDF
@@ -40,55 +41,17 @@
 #1.3 The code below is functions which use regular expressions to match patterns to look for the desired attributes:
 
 
-#This function finds the kwy value pairs and is meant to work with different spacing, whether the value is on the same line or on a different line than the key
+#This function finds the key value pairs and is meant to work with different spacing, whether the value is on the same line or on a different line than the key
 #As in the documents we see ":" before any attribute we use that to guide whether the value is 
+#It assumes that the key is followed by ":" then the value. We account for possible differences in spacing, such as some values being within the same line as the key, while others are a line or two below the key 
+#This occurs as in the pdfs the data is othen in tables on in different lines, which is then reflected as we extract the text 
 
-    def extract_key_value_name(text, key):
+    # sometimes there is only 1 key and other times there are multiple so we want to iterate through the list of kwys 
+    def keyvaluepair(text, keys):
+        if isinstance(keys, str):
+            keys = [keys]
         lines = text.split('\n')
-        value = None
-        for i, line in enumerate(lines):
-            if key in line:
-                match = re.search(rf'{key}\s*:\s*(.*)', line)
-                if match and match.group(1).strip():
-                    value = match.group(1).strip()
-                else:
-                    if i + 1 < len(lines) and lines[i + 1].strip() == ':':
-                        for j in range(i + 2, len(lines)):
-                            if lines[j].strip():
-                                value = lines[j].strip()
-                                break
-                    elif i + 1 < len(lines) and re.match(r'\s*:\s*(.*)', lines[i + 1].strip()):
-                        match = re.match(r'\s*:\s*(.*)', lines[i + 1].strip())
-                        if match and match.group(1).strip():
-                            value = match.group(1).strip()
-                    elif i + 1 < len(lines) and lines[i + 1].strip():
-                        value = lines[i + 1].strip()
-                break
-        return value
-
-#The CAS Number always follows the same pattern 
-#It can be made up from up to 10 numbers. They are separated into 3 different groups with "-". The first part has 2-7 digits, second has 2 digits and third has 1.
-
-    def casnumber(text):
-        cas_pattern = r'\b\d{2,7}-\d{2}-\d\b'
-        match = re.search(cas_pattern, text)
-        if match:
-            return match.group(0)
-        return None
-
-    def ecnumber(text):
-        ec_no_pattern = r'\b(2|4|5)\d{2}-\d{3}-\d\b'
-        match = re.search(ec_no_pattern, text)
-        if match:
-            return match.group(0)
-        return None
-
-#This code matches key value pairs
-#It assumes that the key is followed by ":" then the value and accounts for possible differences in spacing, such as some values being a line or two below the key 
-
-    def extract_key_value2(text, keys):
-        lines = text.split('\n')
-        value = None
+            value = None
         for key in keys:
             for i, line in enumerate(lines):
                 if key in line:
@@ -106,23 +69,40 @@
                         elif i + 1 < len(lines):
                             value = lines[i + 1].strip()
                     if value:
-                        break
+                    break
             if value:
                 break
         return value
+    
+#The CAS Number always follows the same pattern 
+#It can be made up from up to 10 numbers. They are separated into 3 different groups with "-". The first part has 2-7 digits, second has 2 digits and third has 1.
+
+    def casnumber(text):
+        cas_pattern = r'\b\d{2,7}-\d{2}-\d\b'
+        match = re.search(cas_pattern, text)
+        if match:
+            return match.group(0)
+        return None
+
+    def ecnumber(text):
+        ec_no_pattern = r'\b(2|4|5)\d{2}-\d{3}-\d\b'
+        match = re.search(ec_no_pattern, text)
+        if match:
+            return match.group(0)
+        return None
         
-#This function relies on the previous functions to match key value pairs
+#This function relies on the previously defined function to match key value pairs
 #In this case the keys are 'Identified uses', 'Substance/Mixture' and 'Recommended use' as we are assuming all those have the same meaning for our purpose
 
     def uses(text):
         #We want to be able to seach for these patterns both if they are in capital and lower cases so use the package "IGNORECASE" from regular expressions for a case-insesitive search
         text = re.sub(r'Recommended use', '', text, count=1, flags=re.IGNORECASE)
         if "Identified uses:" in text:
-            return extract_key_value2(text, ["Identified uses"])
+            return keyvaluepair(text, ["Identified uses"])
         elif "Substance/Mixture" in text:
-            return extract_key_value2(text, ["Substance/Mixture"])
+            return keyvaluepair(text, ["Substance/Mixture"])
         elif "Recommended use" in text:
-            return extract_key_value2(text, ["Recommended use"])
+            return keyvaluepair(text, ["Recommended use"])
         else:
             return None
 
@@ -180,7 +160,7 @@
 
     for pdf_file in uploaded.keys():
         text = pdfcontent(pdf_file)
-        product_name = extract_key_value_name(text, "Product name")
+        product_name = keyvaluepair(text, "Product name")
         cas_no = casnumber(text)
         ec_no = ecnumber(text)
         id_uses = uses(text)
