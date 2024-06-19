@@ -24,7 +24,6 @@
     from langdetect import detect, DetectorFactory
     from langdetect.lang_detect_exception import LangDetectException
     from deep_translator import GoogleTranslator
-    from deep_translator.exceptions import NotValidPayload, NotValidLength
 
 #1.2 Upload the PDF document and then the text from it will be extracted with line separators to read it more clearly
 
@@ -39,7 +38,43 @@
     for pdf_file in uploaded.keys():
         text = pdfcontent(pdf_file)
 
-#1.3 The code below is functions which use regular expressions to match patterns to look for the desired attributes:
+
+#1.3 Next we translate the text to English
+
+    DetectorFactory.seed = 0
+
+    def clean_text(text):
+        lines = text.splitlines()
+        cleaned_lines = [line.strip() for line in lines if line.strip()]
+        return cleaned_lines
+
+    def detect_language(line):
+      try:
+        detected = detect(line)
+        return detected
+      except LangDetectException as e:
+        return None
+
+    def toenglish(line, source_language):
+        translated = GoogleTranslator(source=source_language, target='en').translate(line)
+        return translated
+
+    for pdf_file in uploaded.keys():
+        text = extract_text_from_pdf(pdf_file)
+        if text:
+            cleaned_lines = clean_text(text)
+            translatedsingle = []
+            for i, line in enumerate(cleaned_lines[:150]):
+                detected_language = detect_language(line)
+                if detected_language:
+                    translated_line = toenglish(line, detected_language)
+                    translatedsingle.append(translated_line)
+                else:
+                    translatedsingle.append(line)
+            translated = "\n".join(translatedsingle)
+            text = translated
+   
+#1.4 The code below is functions which use regular expressions to match patterns to look for the desired attributes:
 
     #This function finds the key value pairs and is meant to work with different spacing, whether the value is on the same line or on a different line than the key
 
@@ -177,7 +212,7 @@
         return chemical_name
 
 
-#1.4 This step applies the functions and displays the dataframe 
+#1.5 This step applies the functions and displays the dataframe 
 
     results = []
 
@@ -208,7 +243,7 @@
     df = pd.DataFrame(results)
     display(df)
 
-#1.5 This code creates a SQL compatible df
+#1.6 This code creates a SQL compatible df
 
     from sqlalchemy import create_engine text
     lite = create_engine('sqlite://, echo = False )
