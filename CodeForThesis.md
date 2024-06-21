@@ -347,7 +347,7 @@
 
 #3.1 Install packages 
 
-%matplotlib widget
+    %matplotlib widget
 
     import matplotlib.pyplot as plt
     import matplotlib.patches as patches
@@ -372,8 +372,8 @@
     upload_widget.observe(uploadfunc, names='value')
     display.display(upload_widget
 
-upload_widget.observe(on_upload_change, names='value')
-display.display(upload_widget)
+    upload_widget.observe(on_upload_change, names='value')
+    display.display(upload_widget)
 
 
 #3.3 Convert to image
