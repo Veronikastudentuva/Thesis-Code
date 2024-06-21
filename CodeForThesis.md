@@ -347,9 +347,38 @@
 
 #3.1 Install packages 
 
+%matplotlib widget
+
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as patches
+    import pytesseract
+    import fitz  
+    import io
+    from PIL import Image
+    from ipywidgets import FileUpload
+    import IPython.display as display
+
 #3.2 Upload pdf
 
+    upload_widget = FileUpload(accept='.pdf', multiple=False)
+    def uploadfunc(change):
+        for filename, file_info in change['new'].items():
+            with open(filename, 'wb') as f:
+                f.write(file_info['content'])
+            global pdf_path
+            pdf_path = filename
+            display.display(display.Image(data=file_info['content'], format='png'))
+            
+    upload_widget.observe(uploadfunc, names='value')
+    display.display(upload_widget
+
+upload_widget.observe(on_upload_change, names='value')
+display.display(upload_widget)
+
+
 #3.3 Convert to image
+
+
 
 #3.4 Select using 'drag and drop' using the curser 
 
