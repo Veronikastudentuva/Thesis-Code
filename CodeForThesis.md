@@ -259,6 +259,7 @@
 
     !pip install pytesseract
 
+    import pytesseract
     from PIL import Image
     import matplotlib.pyplot as plt
 
@@ -273,7 +274,7 @@
 
 #2.3 Make the first page an image 
 
-    def render_pdf_page_as_image(pdf_path, page_number=0, zoom=1):
+    def pdftoimg(pdf_path, page_number=0, zoom=1):
         doc = fitz.open(pdf_path)
         page = doc.load_page(page_number)
         mat = fitz.Matrix(zoom, zoom)
@@ -283,7 +284,7 @@
 
 #2.3 Upload PDF and then the template is applied and results are displayed
 
-    def extract_region_from_pdf(pdf_path, coordinates, zoom=2, page_number=0):
+    def zones_img_take(pdf_path, coordinates, zoom=2, page_number=0):
         doc = fitz.open(pdf_path)
         page = doc.load_page(page_number)
         mat = fitz.Matrix(zoom, zoom)
@@ -296,19 +297,19 @@
         y0 = max(0, min(y0, page_height * mat.d))
         x1 = max(0, min(x1, page_width * mat.a))
         y1 = max(0, min(y1, page_height * mat.d))
-
-    rect = fitz.Rect(x0, y0, x1, y1)
-    pix = page.get_pixmap(clip=rect)
-    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-    return img, pix.width, pix.height
+        rect = fitz.Rect(x0, y0, x1, y1)
+        pix = page.get_pixmap(clip=rect)
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+        return img, pix.width, pix.height
 
     uploaded = files.upload()
     pdf_path = list(uploaded.keys())[0]
+    img, width, height = pdftoimg(pdf_path)
         
     for zone in template:
         key = zone['key']
         coordinates = zone['coordinates']
-        extracted_img, extracted_width, extracted_height = extract_region_from_pdf(pdf_path, coordinates)
+        extracted_img, extracted_width, extracted_height = zones_img_take(pdf_path, coordinates)
         print(f"{key}: 'Zone' size: {extracted_width} x {extracted_height} pixels")
         plt.figure(figsize=(8, 8))
         plt.imshow(extracted_img)
@@ -318,10 +319,49 @@
 
 #2.4 The information is extracted from the image into a dataframe 
 
+    def ocr_image(image):
+        return pytesseract.image_to_string(image)
+
+    ocr_results = {}
+    for zone in template:
+        key = zone['key']
+        coordinates = zone['coordinates']
+        extracted_img, extracted_width, extracted_height = zones_img_take(pdf_path, coordinates)
+        ocr_text = ocr_image(extracted_img)
+        ocr_results[key] = ocr_text
+
+    import pandas as pd
+    df = pd.DataFrame([ocr_results])
+    
 #2.5 Dataframe can be converted into an SQL compatible format
+
+    from sqlalchemy import create_engine text
+    lite = create_engine('sqlite://, echo = False )
+    df.to_sql(name='taxonomy', con = lite)
+    with engine.connect() as k:
+        k.execute(text("select * from taxonomy")).fetchall()
+    sqlite_taxonomy = pd.read_sql_query("select * from taxonomy", k=lite) 
+    display(sqlite_taxonomy)
     
 # Section 3
 
+#3.1 Install packages 
+
+#3.2 Upload pdf
+
+#3.3 Convert to image
+
+#3.4 Select using 'drag and drop' using the curser 
+
+#3.5 Convert df to sql compatible format
+
+    from sqlalchemy import create_engine text
+    lite = create_engine('sqlite://, echo = False )
+    df.to_sql(name='taxonomy', con = lite)
+    with engine.connect() as k:
+        k.execute(text("select * from taxonomy")).fetchall()
+    sqlite_taxonomy = pd.read_sql_query("select * from taxonomy", k=lite) 
+    display(sqlite_taxonomy)
 
 
 
