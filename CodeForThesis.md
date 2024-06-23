@@ -77,13 +77,9 @@
 #1.4 The code below is functions which use regular expressions to match patterns to look for the desired attributes:
 
     #This function finds the key value pairs and is meant to work with different spacing, whether the value is on the same line or on a different line than the key
-
     #As in the documents we see ":" before any attribute we use that to guide whether the value is 
-
     #It assumes that the key is followed by ":" then the value. We account for possible differences in spacing, such as some values being within the same line as the key, while others are a line or two below the key 
-
     #This occurs as in the pdfs the data is othen in tables on in different lines, which is then reflected as we extract the text 
-
     # sometimes there is only 1 key and other times there are multiple so we want to iterate through the list of keys
     
     def keyvaluepair(text, keys):
@@ -212,7 +208,7 @@
         return chemical_name
 
 
-#1.5 This step applies the functions and displays the dataframe 
+#1.5 This step applies the functions, adds the results to the dataframe and displays said dataframe 
 
     results = []
 
@@ -243,7 +239,7 @@
     df = pd.DataFrame(results)
     display(df)
 
-#1.6 This code creates a SQL compatible df
+#1.6 This code creates a SQL compatible dataframe 
 
     from sqlalchemy import create_engine text
     lite = create_engine('sqlite://, echo = False )
@@ -259,11 +255,15 @@
 
     !pip install pytesseract
 
+    from sqlalchemy import create_engine text
     import pytesseract
     from PIL import Image
     import matplotlib.pyplot as plt
 
 #2.2 Set up the template 
+#the coordinates were manally found and entered based on a common pattern
+#the hazard and un number are omitted as there was little placement pattern found wwithin the various pdfs
+#the ADR is omitted because it was not included in these documents
 
     template = [{"key": "Product Name", "coordinates": (65, 100, 120, 110)},
     {"key": "CAS-No.", "coordinates": (70, 130, 200, 136)},
@@ -335,7 +335,6 @@
     
 #2.5 Dataframe can be converted into an SQL compatible format
 
-    from sqlalchemy import create_engine text
     lite = create_engine('sqlite://, echo = False )
     df.to_sql(name='taxonomy', con = lite)
     with engine.connect() as k:
@@ -355,7 +354,7 @@
     import fitz  
     import io
     from PIL import Image
-    from ipywidgets import FileUpload
+    from ipywidgets import FileUpload, Button, VBox, Output
     import IPython.display as display
 
 #3.2 Upload pdf
@@ -378,11 +377,34 @@
 
 #3.3 Convert to image
 
-
+    
 
 #3.4 Select using 'drag and drop' using the curser 
 
-#3.5 Convert df to sql compatible format
+#3.5 Click the button called 'Finish' once you are satasfied with the selected zones and then the extracted informtaion is displayed 
+
+    #This code instantiates a button with the label 'Finish'
+    done_button = Button(description="Finish")
+    output = Output()
+
+    #This functions makes it so that when the user clicks the finish button the text is shown
+    #This step is here in order to allow the user to verify the output ad see mistakes if necessary 
+    def on_done_button_clicked(b):
+        toggle_selector.set_active(False)
+        with output:
+            print("Extracted Information from the Selection:")
+            for i, txt in enumerate(extracted_texts, 1):
+                print(f"Information number {i} below:\n{txt}\n")
+
+    done_button.on_click(on_done_button_clicked)
+    display.display(VBox([done_button, output]))
+
+#3.6 This puts the extracted information into a dataframe (df) 
+
+    
+
+
+#3.7 Convert df to sql compatible format
 
     from sqlalchemy import create_engine text
     lite = create_engine('sqlite://, echo = False )
