@@ -76,11 +76,11 @@
    
 #1.4 The code below is functions which use regular expressions to match patterns to look for the desired attributes:
 
-    #This function finds the key value pairs and is meant to work with different spacing, whether the value is on the same line or on a different line than the key
-    #As in the documents we see ":" before any attribute we use that to guide whether the value is 
-    #It assumes that the key is followed by ":" then the value. We account for possible differences in spacing, such as some values being within the same line as the key, while others are a line or two below the key 
-    #This occurs as in the pdfs the data is othen in tables on in different lines, which is then reflected as we extract the text 
-    # sometimes there is only 1 key and other times there are multiple so we want to iterate through the list of keys
+#This function finds the key value pairs and is meant to work with different spacing, whether the value is on the same line or on a different line than the key
+#As in the documents we see ":" before any attribute we use that to guide whether the value is 
+#It assumes that the key is followed by ":" then the value. We account for possible differences in spacing, such as some values being within the same line as the key, while others are a line or two below the key 
+#This occurs as in the pdfs the data is othen in tables on in different lines, which is then reflected as we extract the text 
+#Sometimes there is only 1 key and other times there are multiple so we want to iterate through the list of keys
     
     def keyvaluepair(text, keys):
         if isinstance(keys, str):
@@ -109,9 +109,8 @@
                 break
         return value
     
-    #The CAS Number always follows the same pattern 
-    
-    #It can be made up from up to 10 numbers. They are separated into 3 different groups with "-". The first part has 2-7 digits, second has 2 digits and third has 1.
+#The CAS Number always follows the same pattern     
+#It can be made up from up to 10 numbers. They are separated into 3 different groups with "-". The first part has 2-7 digits, second has 2 digits and third has 1.
 
     def casnumber(text):
         cas_pattern = r'\b\d{2,7}-\d{2}-\d\b'
@@ -127,9 +126,8 @@
             return match.group(0)
         return None
         
-    #This function relies on the previously defined function to match key value pairs
-    
-    #In this case the keys are 'Identified uses', 'Substance/Mixture' and 'Recommended use' as we are assuming all those have the same meaning for our purpose
+#This function relies on the previously defined function to match key value pairs
+#In this case the keys are 'Identified uses', 'Substance/Mixture' and 'Recommended use' as we are assuming all those have the same meaning for our purpose
 
     def uses(text):
         #We want to be able to seach for these patterns both if they are in capital and lower cases so use the package "IGNORECASE" from regular expressions for a case-insesitive search
@@ -143,7 +141,7 @@
         else:
             return None
 
-    #We check if its hazardous by looking for specific phrases which say that it is not hazardous, so if such a phrase is not found, we assume it is hazardous 
+#We check if its hazardous by looking for specific phrases which say that it is not hazardous, so if such a phrase is not found, we assume it is hazardous 
 
     def isitahazard(text):
         lower_text = text.lower()
@@ -151,7 +149,7 @@
             return "No"
         return "Yes"
 
-    #ADR is labelled internally within the client company
+#ADR is labelled internally within the client company
 
     def adr_(text):
         return "None"
@@ -347,7 +345,9 @@
 #3.1 Install packages 
 
     %matplotlib widget
-
+    
+    from matplotlib.widgets import RectangleSelector
+    import pandas as pd
     import matplotlib.pyplot as plt
     import matplotlib.patches as patches
     import pytesseract
@@ -355,9 +355,9 @@
     import io
     from PIL import Image
     from ipywidgets import FileUpload, Button, VBox, Output
-    import IPython.display as display
+    import IPython.display as display, HTML
 
-#3.2 Upload pdf
+#3.2 Upload pdf and then convert it to an image and display (so that after the user can selecte from the image)
 
     upload_widget = FileUpload(accept='.pdf', multiple=False)
     def uploadfunc(change):
@@ -374,37 +374,60 @@
     upload_widget.observe(on_upload_change, names='value')
     display.display(upload_widget)
 
+#3.3 Select using 'drag and drop' using the curser 
+#The user has to make a rectangle zone around the areas they want to extract the information from 
 
-#3.3 Convert to image
+    coordinates = []
+    extractedinform = []
 
-    
+    def rectangleshape(ax, x0, y0, x1, y1, color='green'):
+        rect = patches.Rectangle((x0, page_height - y1), x1 - x0, y1 - y0, linewidth=2, edgecolor=color, facecolor='none')
+        ax.add_patch(rect)
 
-#3.4 Select using 'drag and drop' using the curser 
+    def usermovesmouse(eclick, erelease):
+        x0, y0 = eclick.xdata, eclick.ydata
+        x1, y1 = erelease.xdata, erelease.ydata
+        coordinates.append((x0, y0, x1, y1))
+        rectangleshape(ax, x0, y0, x1, y1)
+        plt.draw()
+        extract_text(x0, y0, x1, y1)
 
-#3.5 Click the button called 'Finish' once you are satasfied with the selected zones and then the extracted informtaion is displayed 
+    toggle_selector = RectangleSelector(ax, usermovesmouse, interactive=True)
+    plt.show()
+
+#3.4 Click the button called 'Finish' once you are satasfied with the selected zones
+#Then the extracted informtaion is displayed for verification and a dataframe is created 
 
     #This code instantiates a button with the label 'Finish'
-    done_button = Button(description="Finish")
+    finishbutton = Button(description="Finish")
     output = Output()
 
+    #this function ensures that after each Text (number) eg "Text 1" a new column is used 
+    def createdf(extractedinform):
+        info = {}
+        for i, text in enumerate(extractedinform, 1):
+            column = f'Text {i}'
+            info[column] = [text.strip().replace('\n', ' ').replace('  ', ' ')] 
+        df = pd.DataFrame(info)
+        return df
+ 
     #This functions makes it so that when the user clicks the finish button the text is shown
-    #This step is here in order to allow the user to verify the output ad see mistakes if necessary 
-    def on_done_button_clicked(b):
+    #This step is here in order to allow the user to verify the output ad see mistakes if necessary
+    #It then adds the information to the dataframe, based on the pattern defined in the previos function called createdf
+    
+    def userclicks(b):
         toggle_selector.set_active(False)
         with output:
-            print("Extracted Information from the Selection:")
-            for i, txt in enumerate(extracted_texts, 1):
+            for i, txt in enumerate(extractedinform, 1):
                 print(f"Information number {i} below:\n{txt}\n")
-
-    done_button.on_click(on_done_button_clicked)
-    display.display(VBox([done_button, output]))
-
-#3.6 This puts the extracted information into a dataframe (df) 
-
+            df = createdf(extractedinform)
+            print("\nDataFrame:")
+            display(df)
     
+    finishbutton.on_click(userclicks)
+    display.display(VBox([finishbutton, output]))  
 
-
-#3.7 Convert df to sql compatible format
+#3.5 Convert df to sql compatible format
 
     from sqlalchemy import create_engine text
     lite = create_engine('sqlite://, echo = False )
